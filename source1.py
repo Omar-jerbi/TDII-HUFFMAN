@@ -1,40 +1,47 @@
+from math import log2
+from os import read
 import random
 
 
-DIMINPUT = 100
+DIMINPUT = 10000 #dimensione file di input
 
 
-def tochar(x):
-	if(x == 26):
-		return ' '
-	else:
-		return(chr(97+x)) 
+#array con le frequenze empiriche delle lettere nella lingua italiana(semplificato), fonte: Wikipedia
+#per 1050 lettere
+arraylettere = ['a']*110 + [' ']*80 + ['b']*9 +['c']*45+['d']*37+['e']*108+['f']*9+['g']*16+['h']*15+['i']*103+['l']*65+['m']*25+['n']*68+['o']*88+['p']*30+['q']*5+['r']*63+['s']*56+['t']*55+['u']*30+['v']*21+['z']*5+['w']*1+['x']*1+['y']*1+['j']*2+['k']*2
 
 
-#riempe array da 0 a 26 con rispettive freq:: 0=a 25=z 26=' '
+
+
+
+#riempe array da 0 a 26 con rispettive freq:: 0=a 1=b ... 25=z 26=' '
 def freqs(x, array):
 	array[x]+=1
 
 
 def logList(lista):
 	for couple in lista:
-		print("%s , %s ||" %(couple.car, couple.num), end='') #""" +1  per visualizzare freq empirica corretta """
+		print("%s , %s ||" %(couple.car, couple.num), end='')
 	print()
 
 
+def toInt(x):
+	if(x == ' '):
+		return 26
+	else:
+		return ord(x)-97
 
 ##########################################################################################
-arrayfreq = [0]*27  ##############   non ho la minima idea del perchè con -1 OK, con 0 KO    ####################
-file_caratteri = 'fileext.txt'
+arrayfreq = [0]*27 
+file_caratteri = 'filechar.txt'
 
 f = open(file_caratteri, 'w+')
 
 for i in range(DIMINPUT): #riempo fileext
-	x = random.randint(0,26)
-	carac = tochar(x)
-	freqs(x, arrayfreq) #array con le frequenze_empiriche di ogni char
+	x = random.randint(0,1049)
+	carac = arraylettere[x];
+	freqs(toInt(carac), arrayfreq) #array con le frequenze empiriche di ogni char
 	f.write(carac)
-
 f.close()
 
 #############################################################################
@@ -62,7 +69,7 @@ class Node:
 			middle = width // 2
 			return [line], width, height, middle
 
-	# Only l child.
+	# Only L child.
 		if self.r is None:
 			lines, n, p, x = self.l._display_aux()
 			s = '%s' % self.car
@@ -72,7 +79,7 @@ class Node:
 			shifted_lines = [line + u * ' ' for line in lines]
 			return [first_line, second_line] + shifted_lines, n + u, p + 2, n + u // 2
 
-	# Only r child.
+	# Only R child.
 		if self.l is None:
 			lines, n, p, x = self.r._display_aux()
 			s = '%s' % self.car
@@ -101,7 +108,7 @@ class Node:
 
 
 ###########################################################################################
-listN = [] #lista Node
+listN = [] #lista Nodi
 for i in range(27):
 	if i != 26:
 		listN.append( Node(chr(i+97), arrayfreq[i]) )
@@ -110,26 +117,13 @@ for i in range(27):
 
 listN.sort(key=lambda x: x.num, reverse=True)
 
-################################################################################
 
-
-"""listN = [
-	Node('g', 70),
-	Node('r', 65),
-	Node('v', 48),
-	Node('a', 32),
-	Node('f', 31),
-	Node('i', 20),
-	Node('e', 11),
-	Node('h', 4),
-	Node('w', 1),
-]
-"""
-
+#########################DISPLAY ALBERO#########################################################################################
 logList(listN)
 print()
 
-listNN = []
+listNN = [] #lista nodi Nuova, ogni elemente è una tripla: (nodo_padre, figlio_destro, figlio_sinistro)
+			# serve come input per la successiva codifica
 
 while True:
 	try:
@@ -156,14 +150,8 @@ while True:
 	except IndexError:
 		root.display()
 		break
+#########################DISPLAY ALBERO#########################################################################################
 
-
-"""for x in listNN:
-	print(x[0].car)
-	print(x[1].car)
-	print(x[2].car)
-	print()
-"""
 
 def findCar(l, c):
 	i = 0
@@ -211,6 +199,41 @@ def cod(list, c):
 	return res[::-1]
 	
 
+# print(cod(listNN, 'a'))
+# print(cod(listNN, 'b'))
 
 #####################################################################
-print(cod(listNN, 'f'))
+###########################CREAZIONE DEL FILE CODIFICATO##########################################
+file_in = open("filechar.txt", 'r');
+file_cod = open("filecodificato.txt", 'w+');
+
+for line in file_in:
+	for c in line:
+		file_cod.write(cod(listNN, c));
+
+
+#####################################################################
+#####################################################################
+
+
+######################CALCOLO DELL'ENTROPIA E DELLA LUNGHEZZA ATTESA################################
+def H(arr):
+	s = 0
+	for i in range(0, 26):
+		s = s + (arr[i]/DIMINPUT)*log2(DIMINPUT/arr[i])
+	return s
+
+def L(arr):
+	s = 0;
+	for i in range(0, 26):
+		if(i == 26):
+			carattere_i = " "
+		else:
+			carattere_i = chr(i+97)
+		
+		s = s + (arr[i]/DIMINPUT)*len(cod(listNN, carattere_i))
+	return s
+
+# H ≈ L, la codifica di huffman èsenza ridondanza, non si può migliorare ulteriormente
+print("H =", H(arrayfreq))
+print("L =", L(arrayfreq))
